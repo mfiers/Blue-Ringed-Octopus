@@ -1,0 +1,98 @@
+#!/usr/bin/env python
+
+import os
+import sys
+import logging as g
+g.basicConfig(level=g.DEBUG)
+import argparse
+import numpy as np
+
+parser = argparse.ArgumentParser(description='Convert a vcf file into a consensus seq.')
+parser.add_argument('-r', '--ref', metavar='SEQ', type=str, nargs=1)
+parser.add_argument('-o', '--out', metavar='FASTA', type=str, nargs=1)
+
+args = parser.parse_args()
+
+g.info("start consensus")
+
+ref = args.ref[0]
+out = args.out[0]
+g.info("reference %s" % ref)
+g.info("output %s" % out)
+g.info("reading the pileup from stdin")
+
+def error(m):
+    g.critical(str(m))
+    sys.exit(0)
+
+refid = ''
+refseq = []
+
+x = 'abcdefghijl'
+
+
+
+
+
+#read the reference
+with open(ref) as F:
+    refid = F.readline()
+    if not refid[0] == '>':
+        error('Invalid fasta')
+    refid = refid[1:]
+    rsq = ''.join(F.read().split()).lower()
+    refseq = list(rsq)
+    refseq2 = np.chararray(refseq)
+
+
+print refseq2
+sys.exit()
+
+
+
+print '>' + refid
+
+##we now have the refseq in lower case - meaning - all is softmasked
+i = 0
+for line in sys.stdin:
+    line = line.strip()
+    if not line: continue
+    if line[0] == '#': continue
+
+    ls = line.split("\t")
+    try:
+        attrs = dict([x.split('=') for x in ls[7].split(';') if '=' in x])
+    except:
+        print "error parsing attrib line"
+        print ls
+        raise
+
+    dp4 = [int(x) for x in attrs.get('DP4', "0,0,0,0").split(',')]
+    hqr = dp4[0] + dp4[1]
+    hqa = dp4[2] + dp4[3]
+    c = int(ls[1]) - 1
+
+    orig = refseq[c]
+    ms = ""
+
+    if hqr >= 3:
+        refseq[c] = refseq[c].upper()
+        ms = "ref"
+    elif hqa >= 3 and ls[4] != '.' and (not ',' in ls[4]):
+        ms = 'ALTERNATIVE'
+        refseq[c] = ls[4].upper()
+    else:
+        ms = 'boring'
+
+    i += 1
+    if i > 10000: break
+
+while refseq:
+    print "".join(refseq[:80])
+    refseq = refseq[80:]
+    
+
+
+
+
+    
